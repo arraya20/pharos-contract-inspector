@@ -11,6 +11,7 @@ import { KNOWN, PRIVILEGED, FINGERPRINTS, INTERFACE_IDS } from "./lib/signatures
 import { resolveProxy } from "./lib/proxy.js";
 import { readMetadata, probeInterfaces } from "./lib/decode.js";
 import { resolveMany } from "./lib/fourbyte.js";
+import { assessRisk } from "./lib/risk.js";
 
 // --- CLI args ---
 function parseArgs() {
@@ -134,6 +135,8 @@ async function main() {
     }
   }
 
+  const risk = assessRisk({ proxy, dis, implDis, dangerous, standards, meta });
+
   // 10. Output
   if (opts.json) {
     console.log(JSON.stringify({
@@ -151,6 +154,7 @@ async function main() {
         resolved: Object.entries(resolved).filter(([, v]) => v).map(([sel, sig]) => ({ selector: sel, signature: sig })),
       },
       dangerous,
+      risk,
       opcodeSignals: {
         hasDelegateCall: dis.hasDelegateCall,
         hasSelfdestruct: dis.hasSelfdestruct,
@@ -174,6 +178,22 @@ async function main() {
   lines.push(`  Address:   ${opts.addr}`);
   lines.push(`  Network:   ${net.name} (chainId ${net.chainId})`);
   lines.push(`  Bytecode:  ${dis.codeSize} bytes`);
+  br();
+
+  // Risk summary
+  sep();
+  lines.push("  RISK SUMMARY (pre-flight, not a full audit)");
+  sep();
+  lines.push(`  Score:    ${risk.score}/100`);
+  lines.push(`  Level:    ${risk.level}`);
+  lines.push(`  Headline: ${risk.headline}`);
+  lines.push("");
+  lines.push("  Risk flags:");
+  for (const f of risk.flags) {
+    const icon = f.status === "pass" ? "✓" : f.status === "info" ? "ⓘ" : "⚠️";
+    lines.push(`  ${icon} ${f.check} (${f.scoreImpact >= 0 ? "+" : ""}${f.scoreImpact}) — ${f.details}`);
+    if (f.evidence?.length) lines.push(`     Evidence: ${f.evidence.join(", ")}`);
+  }
   br();
 
   // Proxy

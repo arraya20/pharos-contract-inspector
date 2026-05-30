@@ -9,7 +9,10 @@
   "main": "inspect.js",
   "scripts": {
     "inspect": "node inspect.js",
-    "demo": "node inspect.js 0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B --network testnet"
+    "demo": "node inspect.js 0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B --network testnet",
+    "serve": "node server.js",
+    "test": "node test-risk.js",
+    "lint": "node --check inspect.js && node --check server.js && node --check lib/risk.js && node --check lib/inspect-core.js"
   },
   "keywords": [
     "pharos",

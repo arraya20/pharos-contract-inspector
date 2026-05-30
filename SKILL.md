@@ -4,8 +4,9 @@ description: >
   ABI-free onchain contract introspection for Pharos L1. Point at any contract address
   and get: proxy detection (EIP-1167/1967/UUPS/OZ), function selector extraction from
   bytecode, interface detection (ERC-165), standard fingerprinting (ERC-20/721/1155),
-  privileged function flagging (mint/pause/upgrade/blacklist), and optional 4byte.directory
-  resolution. Works on unverified contracts with no source code, no explorer API, and no
+  privileged function flagging (mint/pause/upgrade/blacklist), deterministic risk summary,
+  optional HTTP API wrapper, and optional 4byte.directory resolution. Works on unverified
+  contracts with no source code, no explorer API, and no
   ABI — pure JSON-RPC bytecode analysis. Defaults to Pharos Atlantic Testnet (688689).
   Triggers: "inspect contract", "check contract", "what does this contract do",
   "is this contract safe", "contract audit", "bytecode analysis".
@@ -61,6 +62,14 @@ node inspect.js 0xcA11bde05977b3631167028862bE2a173976CA11 --json
 # Offline mode (skip 4byte.directory lookups)
 node inspect.js 0xcA11bde05977b3631167028862bE2a173976CA11 --offline
 
+# Start optional HTTP API wrapper
+npm run serve
+
+# Inspect via HTTP API
+curl -X POST http://127.0.0.1:8790/inspect \
+  -H 'Content-Type: application/json' \
+  --data '{"address":"0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B","network":"testnet","offline":true}'
+
 # Custom RPC
 node inspect.js 0x... --rpc https://atlantic.dplabs-internal.com
 ```
@@ -103,6 +112,36 @@ Functions that grant control, move/destroy value, or change contract state are f
 Unknown selectors (not in the curated built-in dictionary) are resolved via
 [4byte.directory](https://www.4byte.directory), the open function signature registry.
 Tolerant to timeouts — degrades gracefully to showing raw selectors.
+
+### 8. Risk Summary
+
+Returns a deterministic pre-flight score and tier (`Low`, `Medium`, `High`) from the same introspection signals: proxy/upgradeability, privileged selectors, owner/admin exposure, `DELEGATECALL`, `SELFDESTRUCT`, and factory opcodes.
+
+This is not a full audit; it is a fast agent safety gate before `readContract` or `sendTransaction`.
+
+### 9. HTTP API Wrapper
+
+For agents that prefer HTTP tools, run:
+
+```bash
+npm run serve
+```
+
+Then call:
+
+```txt
+POST http://127.0.0.1:8790/inspect
+```
+
+Body:
+
+```json
+{
+  "address": "0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B",
+  "network": "testnet",
+  "offline": true
+}
+```
 
 ## Network Configuration
 
@@ -165,6 +204,7 @@ Tolerant to timeouts — degrades gracefully to showing raw selectors.
 ```
 pharos-contract-inspector/
 ├── inspect.js          # CLI orchestrator
+├── server.js           # Optional dependency-free HTTP API wrapper
 ├── networks.json       # Pharos testnet/mainnet config
 ├── package.json
 ├── lib/
@@ -173,7 +213,9 @@ pharos-contract-inspector/
 │   ├── signatures.js   # Curated selector database + interface fingerprints
 │   ├── proxy.js        # Multi-pattern proxy resolver
 │   ├── decode.js       # ERC metadata decoder (name/symbol/owner)
-│   └── fourbyte.js     # 4byte.directory resolver (optional, graceful fallback)
+│   ├── fourbyte.js     # 4byte.directory resolver (optional, graceful fallback)
+│   ├── inspect-core.js # Reusable inspection pipeline
+│   └── risk.js         # Deterministic risk summary
 └── SKILL.md            # This file
 ```
 

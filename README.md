@@ -30,6 +30,14 @@ node inspect.js 0xcA11bde05977b3631167028862bE2a173976CA11 --json
 
 # Offline mode (skip 4byte.directory lookups)
 node inspect.js 0xcA11bde05977b3631167028862bE2a173976CA11 --offline
+
+# Optional HTTP API wrapper
+npm run serve
+
+# Inspect via HTTP API
+curl -X POST http://127.0.0.1:8790/inspect \
+  -H 'Content-Type: application/json' \
+  --data '{"address":"0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B","network":"testnet","offline":true}'
 ```
 
 ## What It Reports
@@ -43,6 +51,46 @@ node inspect.js 0xcA11bde05977b3631167028862bE2a173976CA11 --offline
 | **Metadata** | `name()`, `symbol()`, `decimals()`, `totalSupply()`, `owner()` via live eth_call |
 | **Privileged Flagging** | `mint`, `pause`, `upgradeTo`, `transferOwnership`, `DELEGATECALL`, `SELFDESTRUCT` |
 | **4byte Resolution** | Unknown selectors → [4byte.directory](https://www.4byte.directory) lookup |
+| **Risk Summary** | Deterministic Low/Medium/High score from proxy, admin, opcode, and privileged selector signals |
+
+## HTTP API
+
+The CLI is the primary skill surface. The repo also ships a tiny dependency-free HTTP wrapper for agents that prefer API calls.
+
+```bash
+npm run serve
+```
+
+Health:
+
+```txt
+GET http://127.0.0.1:8790/health
+```
+
+Inspect:
+
+```txt
+POST http://127.0.0.1:8790/inspect
+Content-Type: application/json
+
+{
+  "address": "0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B",
+  "network": "testnet",
+  "offline": true
+}
+```
+
+Verified local API result against Pharos USDC testnet:
+
+```json
+{
+  "ok": true,
+  "level": "High",
+  "score": 81,
+  "proxy": "OZ legacy proxy",
+  "name": "USDC"
+}
+```
 
 ## Example Output
 
@@ -54,6 +102,11 @@ node inspect.js 0xcA11bde05977b3631167028862bE2a173976CA11 --offline
   Address:   0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B
   Network:   Pharos Atlantic Testnet (chainId 688689)
   Bytecode:  1798 bytes
+
+  RISK SUMMARY (pre-flight, not a full audit)
+  Score:    81/100
+  Level:    High
+  Headline: High risk: review admin powers, upgradeability, and privileged selectors before interaction.
 
   PROXY STATUS
   ⚠️  PROXY DETECTED — OZ legacy proxy
@@ -103,6 +156,7 @@ The core bytecode selector extractor walks the EVM opcode stream, looking for th
 ```
 pharos-contract-inspector/
 ├── inspect.js          # CLI orchestrator
+├── server.js           # Optional dependency-free HTTP API wrapper
 ├── networks.json       # Pharos testnet/mainnet config
 ├── package.json
 ├── lib/
@@ -111,7 +165,9 @@ pharos-contract-inspector/
 │   ├── signatures.js   # Curated selector database + interface fingerprints
 │   ├── proxy.js        # Multi-pattern proxy resolver
 │   ├── decode.js       # ERC metadata decoder
-│   └── fourbyte.js     # 4byte.directory resolver (optional)
+│   ├── fourbyte.js     # 4byte.directory resolver (optional)
+│   ├── inspect-core.js # Reusable inspection pipeline
+│   └── risk.js         # Deterministic risk summary
 └── SKILL.md            # Agent skill definition
 ```
 
