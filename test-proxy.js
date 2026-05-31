@@ -110,17 +110,57 @@ const ZERO = "0x" + "0".repeat(64);
   assert.equal(m.decimals, 6);
   assert.equal(m.totalSupply, 1000000n);
   assert.equal(m.owner.toLowerCase(), owner.toLowerCase());
+  assert.deepEqual(m.errors, [], "all calls succeeded -> no errors");
 }
 
 // ── 7. metadata decode: reverts degrade to null, no throw ─────────────────────
+//   A revert is NOT a transient failure — the contract simply doesn't implement
+//   the method. So `errors` must stay empty (revert = information, not uncertainty).
 {
-  const rpc = new MockRpc({ calls: {} }); // all calls return {ok:false}
+  const rpc = new MockRpc({ calls: {} }); // all calls return {ok:false} (revert)
   const m = await readMetadata(rpc, "0xnontoken");
   assert.equal(m.name, null);
   assert.equal(m.symbol, null);
   assert.equal(m.decimals, null);
   assert.equal(m.totalSupply, null);
   assert.equal(m.owner, null);
+  assert.deepEqual(m.errors, [], "reverts must NOT be logged as transient errors");
+}
+
+// ── 7b. transient failure: owner() times out (transient:true) → tracked ───────
+{
+  const u256 = (n) => "0x" + BigInt(n).toString(16).padStart(64, "0");
+  const abiString = (s) => {
+    const hex = Buffer.from(s, "utf8").toString("hex");
+    const len = (s.length).toString(16).padStart(64, "0");
+    return "0x" + "20".padStart(64, "0") + len + hex.padEnd(64, "0");
+  };
+  const rpc = new MockRpc({
+    calls: {
+      "0x06fdde03": { ok: true, data: abiString("TKN") },
+      "0x95d89b41": { ok: true, data: abiString("TKN") },
+      "0x313ce567": { ok: true, data: u256(18) },
+      "0x18160ddd": { ok: true, data: u256("1000") },
+      "0x8da5cb5b": { ok: false, data: null, transient: true }, // owner() timed out
+    },
+  });
+  const m = await readMetadata(rpc, "0xtoken");
+  assert.equal(m.owner, null);
+  assert.deepEqual(m.errors, ["owner"], "transient owner() failure must be tracked");
+}
+
+// ── 7c. revert on owner() (transient:false) → NOT tracked ─────────────────────
+{
+  const u256 = (n) => "0x" + BigInt(n).toString(16).padStart(64, "0");
+  const rpc = new MockRpc({
+    calls: {
+      "0x313ce567": { ok: true, data: u256(18) },
+      "0x8da5cb5b": { ok: false, data: null, transient: false }, // owner() reverts (no owner)
+    },
+  });
+  const m = await readMetadata(rpc, "0xtoken");
+  assert.equal(m.owner, null);
+  assert.deepEqual(m.errors, [], "a revert on owner() must NOT be flagged as an error");
 }
 
 // ── 8. ERC-165 interface probe ────────────────────────────────────────────────

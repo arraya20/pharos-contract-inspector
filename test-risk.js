@@ -9,7 +9,7 @@ function base(overrides = {}) {
     implDis: null,
     dangerous: [],
     standards: [],
-    meta: { name: null, symbol: null, decimals: null, totalSupply: null, owner: null },
+    meta: { name: null, symbol: null, decimals: null, totalSupply: null, owner: null, errors: [] },
     ...overrides,
   };
 }
@@ -83,6 +83,42 @@ function base(overrides = {}) {
   }));
   const privFlag = r.flags.find((f) => f.check === "Privileged selectors");
   assert.equal(privFlag.status, "warn", "mint() in impl must trigger an admin flag");
+}
+
+// Metadata-incomplete: when owner() RPC-fails (errors includes 'owner'), the
+// score must NOT silently drop the +12 admin flag. We surface a "Metadata read
+// incomplete" warning so the user knows admin exposure is unknown rather than
+// confidently absent. This is the exact scenario that motivated the fix:
+// during live testing, a single flaky owner() call swung USDC's score 81 -> 69.
+{
+  const r = assessRisk(base({
+    standards: ["ERC-20"],
+    meta: { name: "USDC", symbol: "USDC", decimals: 6, totalSupply: 1000n, owner: null, errors: ["owner"] },
+  }));
+  const flag = r.flags.find((f) => f.check === "Metadata read incomplete");
+  assert.ok(flag, "metadata-incomplete flag must exist when owner() failed");
+  assert.equal(flag.status, "info");
+  assert.ok(flag.details.includes("under-reported"), "details should warn about under-reporting");
+  // The ERC-20 simplicity bonus must NOT fire when owner() is unknown — we
+  // can't confidently call this contract simple if we couldn't read owner().
+  assert.ok(
+    !r.flags.some((f) => f.check === "ERC-20 simplicity"),
+    "ERC-20 simplicity bonus must not apply when owner() RPC-failed",
+  );
+}
+
+// Sanity: clean ERC-20 (no errors, no owner, no proxy, no privileged) DOES get
+// the simplicity bonus. The previous test would falsely pass if the condition
+// were always-skip.
+{
+  const r = assessRisk(base({
+    standards: ["ERC-20"],
+    meta: { name: "T", symbol: "T", decimals: 18, totalSupply: 0n, owner: null, errors: [] },
+  }));
+  assert.ok(
+    r.flags.some((f) => f.check === "ERC-20 simplicity"),
+    "ERC-20 simplicity bonus should fire when owner() succeeded with null",
+  );
 }
 
 console.log("risk tests passed");

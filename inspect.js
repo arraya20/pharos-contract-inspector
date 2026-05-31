@@ -109,6 +109,10 @@ function renderReport(report, net) {
     lines.push(`  Total Supply: ${human} (${meta.totalSupply})`);
   }
   if (meta.owner) lines.push(`  Owner:        ${meta.owner}`);
+  if (meta.errors?.length) {
+    lines.push(`  ⚠️  Incomplete: ${meta.errors.length} metadata call(s) did not return (${meta.errors.join(", ")})`);
+    if (meta.errors.includes("owner")) lines.push("     owner() unknown — risk score may under-report admin exposure. Re-run to confirm.");
+  }
   br();
 
   if (report.standards.length) {
