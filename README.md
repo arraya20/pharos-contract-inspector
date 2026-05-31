@@ -157,6 +157,29 @@ The core bytecode selector extractor walks the EVM opcode stream, looking for th
 | Claude Code | `~/.claude/skills/` |
 | Codex | `~/.codex/skills/` |
 
+## Testing
+
+Pure-Node unit tests, no test framework, no network calls:
+
+```bash
+npm test
+# risk tests passed
+# core tests passed
+# format tests passed
+# disasm tests passed
+# proxy + decode tests passed
+```
+
+Coverage targets: bytecode disassembler (selector extraction, opcode flags,
+data-section safety), proxy resolution (EIP-1167 / 1967 / OZ legacy / getter),
+metadata decoder (ABI string / uint / address, revert tolerance, ERC-165 probe),
+risk scoring (proxy, privileged, value-moving, unresolved, owner, opcodes),
+chain-id guard, and BigInt unit formatting.
+
+```bash
+npm run lint    # node --check on every .js file
+```
+
 ## Architecture
 
 ```
