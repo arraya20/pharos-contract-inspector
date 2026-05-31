@@ -62,4 +62,27 @@ function base(overrides = {}) {
   assert.ok(r.flags.some((f) => f.check.includes("Unresolved selectors")));
 }
 
+// Lock the DRY refactor: ADMIN_PRIVILEGED_SELECTORS is a deliberate SUBSET of
+// PRIVILEGED. renounceOwnership (0x715018a6) and setApprovalForAll (0xa22cb465)
+// live in PRIVILEGED but must NOT raise an impl-side admin flag on their own.
+{
+  const r = assessRisk(base({
+    proxy: { isProxy: true, type: "EIP-1967 proxy", impl: "0x1111111111111111111111111111111111111111", admin: null },
+    implDis: { hasDelegateCall: false, hasSelfdestruct: false, hasCreate: false, hasCreate2: false, selectors: ["0x715018a6", "0xa22cb465"] },
+  }));
+  const privFlag = r.flags.find((f) => f.check === "Privileged selectors");
+  assert.ok(privFlag, "privileged selectors flag should exist");
+  assert.equal(privFlag.status, "pass", "renounce/setApprovalForAll must not trigger an impl admin flag");
+}
+
+// And the inverse: a real admin selector in the impl DOES flag.
+{
+  const r = assessRisk(base({
+    proxy: { isProxy: true, type: "EIP-1967 proxy", impl: "0x1111111111111111111111111111111111111111", admin: null },
+    implDis: { hasDelegateCall: false, hasSelfdestruct: false, hasCreate: false, hasCreate2: false, selectors: ["0x40c10f19"] },
+  }));
+  const privFlag = r.flags.find((f) => f.check === "Privileged selectors");
+  assert.equal(privFlag.status, "warn", "mint() in impl must trigger an admin flag");
+}
+
 console.log("risk tests passed");
