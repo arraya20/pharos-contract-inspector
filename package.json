@@ -12,7 +12,7 @@
     "demo": "node inspect.js 0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B --network testnet",
     "serve": "node server.js",
     "test": "node test-risk.js",
-    "lint": "node --check inspect.js && node --check server.js && node --check lib/risk.js && node --check lib/inspect-core.js"
+    "lint": "find . -path ./node_modules -prune -o -path ./.git -prune -o -name '*.js' -type f -exec node --check {} \\;"
   },
   "keywords": [
     "pharos",
