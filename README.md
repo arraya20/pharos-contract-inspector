@@ -15,7 +15,7 @@ On Pharos specifically, where the explorer's API sits behind a Vercel checkpoint
 ## Quick Start
 
 ```bash
-git clone https://github.com/namri/pharos-contract-inspector.git
+git clone https://github.com/arraya20/pharos-contract-inspector.git
 cd pharos-contract-inspector
 npm install
 
@@ -47,11 +47,11 @@ curl -X POST http://127.0.0.1:8790/inspect \
 | **Proxy Detection** | EIP-1167 minimal, EIP-1967, UUPS, OZ legacy, `implementation()` getter |
 | **Selector Extraction** | Walks bytecode opcodes → extracts every function selector in the dispatcher |
 | **Interface Detection** | ERC-165 probe: ERC-721, ERC-1155, etc. |
-| **Standard Fingerprinting** | ERC-20, ERC-721, ERC-1155, Ownable, AccessControl, Pausable, UUPS |
+| **Standard Fingerprinting** | ERC-20, ERC-721, ERC-1155, Ownable, AccessControl, Pausable, UUPS; proxy implementations are included |
 | **Metadata** | `name()`, `symbol()`, `decimals()`, `totalSupply()`, `owner()` via live eth_call |
 | **Privileged Flagging** | `mint`, `pause`, `upgradeTo`, `transferOwnership`, `DELEGATECALL`, `SELFDESTRUCT` |
 | **4byte Resolution** | Unknown selectors → [4byte.directory](https://www.4byte.directory) lookup |
-| **Risk Summary** | Deterministic Low/Medium/High score from proxy, admin, opcode, and privileged selector signals |
+| **Risk Summary** | Deterministic Low/Medium/High score from proxy, admin, opcode, privileged, value-moving, and unresolved selector signals |
 
 ## HTTP API
 

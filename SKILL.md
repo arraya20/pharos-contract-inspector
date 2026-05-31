@@ -4,7 +4,8 @@ description: >
   ABI-free onchain contract introspection for Pharos L1. Point at any contract address
   and get: proxy detection (EIP-1167/1967/UUPS/OZ), function selector extraction from
   bytecode, interface detection (ERC-165), standard fingerprinting (ERC-20/721/1155),
-  privileged function flagging (mint/pause/upgrade/blacklist), deterministic risk summary,
+  privileged function flagging (mint/pause/upgrade/blacklist), value-moving selector
+  flagging (approval/permit/transfer), deterministic risk summary,
   optional HTTP API wrapper, and optional 4byte.directory resolution. Works on unverified
   contracts with no source code, no explorer API, and no
   ABI — pure JSON-RPC bytecode analysis. Defaults to Pharos Atlantic Testnet (688689).
@@ -12,7 +13,7 @@ description: >
   "is this contract safe", "contract audit", "bytecode analysis".
 metadata:
   openclaw:
-    homepage: https://github.com/namri/pharos-contract-inspector
+    homepage: https://github.com/arraya20/pharos-contract-inspector
 ---
 
 # Pharos Contract Inspector
@@ -37,12 +38,12 @@ is it safe?"**
 ## Prerequisites
 
 - **Node.js ≥ 18** (global `fetch` required)
-- **ethers v6** (`npm install ethers`)
+- No runtime npm dependencies
 
 ## Installation
 
 ```bash
-git clone https://github.com/namri/pharos-contract-inspector.git
+git clone https://github.com/arraya20/pharos-contract-inspector.git
 cd pharos-contract-inspector
 npm install
 ```
@@ -105,11 +106,12 @@ Human-readable format for ERC-20 tokens. Falls back gracefully for non-token con
 
 ### 6. Privileged Function Flagging
 Functions that grant control, move/destroy value, or change contract state are flagged:
-- `mint`, `burn` — supply inflation/deflation
+- `mint` — supply inflation
 - `pause`, `unpause` — can freeze all transfers
 - `upgradeTo`, `upgradeToAndCall` — can swap contract logic entirely
 - `transferOwnership`, `changeAdmin` — ownership transfer
 - `grantRole`, `revokeRole` — access control changes
+- `approve`, `permit`, `transferFrom`, `setApprovalForAll` — value-moving or spend-authorization surfaces when resolved from selector signatures
 - `DELEGATECALL` / `SELFDESTRUCT` opcodes — proxy/arbitrary call risk, contract destruction
 
 ### 7. 4byte.directory Resolution
@@ -119,7 +121,7 @@ Tolerant to timeouts — degrades gracefully to showing raw selectors.
 
 ### 8. Risk Summary
 
-Returns a deterministic pre-flight score and tier (`Low`, `Medium`, `High`) from the same introspection signals: proxy/upgradeability, privileged selectors, owner/admin exposure, `DELEGATECALL`, `SELFDESTRUCT`, and factory opcodes.
+Returns a deterministic pre-flight score and tier (`Low`, `Medium`, `High`) from the same introspection signals: proxy/upgradeability, privileged selectors, value-moving resolved signatures, unresolved selector opacity, owner/admin exposure, `DELEGATECALL`, `SELFDESTRUCT`, and factory opcodes.
 
 This is not a full audit; it is a fast agent safety gate before `readContract` or `sendTransaction`.
 
@@ -249,7 +251,7 @@ The disassembler walks the opcode stream (correctly skipping over push immediate
 so data sections aren't misread as opcodes), collects every `PUSH4` immediate that
 is followed by an `EQ` within a short window, and returns them as the contract's
 function selector set. This is the same approach used by tools like `whatsabi` and
-`evmole`, but implemented from scratch with zero external dependencies beyond ethers.
+`evmole`, but implemented from scratch with zero external dependencies beyond Node.js built-ins.
 
 ## Why This Matters for Pharos
 
