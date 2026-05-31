@@ -11,7 +11,7 @@
     "inspect": "node inspect.js",
     "demo": "node inspect.js 0xcfC8330f4BCAB529c625D12781b1C19466A9Fc8B --network testnet",
     "serve": "node server.js",
-    "test": "node test-risk.js && node test-core.js && node test-format.js",
+    "test": "node test-risk.js && node test-core.js && node test-format.js && node test-disasm.js && node test-proxy.js",
     "lint": "find . -path ./node_modules -prune -o -path ./.git -prune -o -name '*.js' -type f -exec node --check {} \\;"
   },
   "keywords": [
