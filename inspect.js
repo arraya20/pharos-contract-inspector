@@ -4,6 +4,7 @@
 // Usage: node inspect.js <address> [--network testnet|mainnet] [--rpc URL] [--json]
 
 import { inspectContract, loadNetworks, jsonStringify } from "./lib/inspect-core.js";
+import { formatUnits } from "./lib/format.js";
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -103,9 +104,9 @@ function renderReport(report, net) {
   if (meta.symbol) lines.push(`  Symbol:       ${meta.symbol}`);
   if (meta.decimals != null) lines.push(`  Decimals:     ${meta.decimals}`);
   if (meta.totalSupply != null) {
-    const d = meta.decimals || 18;
-    const human = Number(meta.totalSupply) / Math.pow(10, d);
-    lines.push(`  Total Supply: ${human.toLocaleString()} (${meta.totalSupply})`);
+    const d = meta.decimals ?? 18;
+    const human = formatUnits(meta.totalSupply, d);
+    lines.push(`  Total Supply: ${human} (${meta.totalSupply})`);
   }
   if (meta.owner) lines.push(`  Owner:        ${meta.owner}`);
   br();

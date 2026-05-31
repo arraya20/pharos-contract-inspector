@@ -42,4 +42,24 @@ function base(overrides = {}) {
   assert.ok(r.flags.some((f) => f.check.includes("SELFDESTRUCT")));
 }
 
+{
+  const r = assessRisk(base({
+    resolvedFunctions: [
+      { selector: "0x87517c45", signature: "approve(address,address,uint160,uint48)" },
+      { selector: "0x36c78516", signature: "transferFrom(address,address,uint160,address)" },
+      { selector: "0x2b67b570", signature: "permit(address,((address,uint160,uint48,uint48),address,uint256),bytes)" },
+    ],
+  }));
+  assert.equal(r.level, "Medium");
+  assert.ok(r.flags.some((f) => f.check.includes("Value-moving selectors")));
+}
+
+{
+  const r = assessRisk(base({
+    unresolvedSelectors: Array.from({ length: 15 }, (_, i) => `0x${String(i).padStart(8, "0")}`),
+  }));
+  assert.equal(r.level, "Medium");
+  assert.ok(r.flags.some((f) => f.check.includes("Unresolved selectors")));
+}
+
 console.log("risk tests passed");
