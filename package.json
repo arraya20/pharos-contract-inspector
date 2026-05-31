@@ -23,13 +23,10 @@
     "abi",
     "proxy",
     "security",
-    "bytecode",
-    "ethers"
+    "bytecode"
   ],
   "license": "MIT-0",
-  "dependencies": {
-    "ethers": "^6.16.0"
-  },
+  "dependencies": {},
   "engines": {
     "node": ">=18"
   }

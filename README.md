@@ -92,6 +92,12 @@ Verified local API result against Pharos USDC testnet:
 }
 ```
 
+Security note: the HTTP API rejects request-body custom RPC URLs by default to avoid SSRF when exposed outside localhost. For trusted local deployments only, enable them with:
+
+```bash
+ALLOW_CUSTOM_RPC=1 npm run serve
+```
+
 ## Example Output
 
 ```
@@ -174,7 +180,7 @@ pharos-contract-inspector/
 ## Dependencies
 
 - Node.js ≥ 18
-- ethers v6 (ABI decoding + keccak)
+- No runtime npm dependencies. Uses native `fetch`, `AbortController`, and small built-in ABI decoders.
 
 ## License
 

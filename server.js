@@ -7,6 +7,7 @@ import { inspectContract, jsonStringify } from "./lib/inspect-core.js";
 
 const PORT = Number(process.env.PORT || 8790);
 const HOST = process.env.HOST || "127.0.0.1";
+const ALLOW_CUSTOM_RPC = process.env.ALLOW_CUSTOM_RPC === "1";
 
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
@@ -36,6 +37,10 @@ const server = http.createServer(async (req, res) => {
     const address = body.address || body.contractAddress;
     if (!/^0x[a-fA-F0-9]{40}$/.test(address || "")) {
       return send(res, 400, { ok: false, error: "bad_request", message: "address or contractAddress must be a valid EVM address" });
+    }
+
+    if (body.rpc && !ALLOW_CUSTOM_RPC) {
+      return send(res, 400, { ok: false, error: "custom_rpc_disabled", message: "Custom RPC URLs are disabled for HTTP API by default. Set ALLOW_CUSTOM_RPC=1 only for trusted/local deployments." });
     }
 
     const report = await inspectContract({
