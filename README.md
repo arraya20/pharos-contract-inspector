@@ -168,13 +168,15 @@ npm test
 # format tests passed
 # disasm tests passed
 # proxy + decode tests passed
+# rpc tests passed
 ```
 
 Coverage targets: bytecode disassembler (selector extraction, opcode flags,
 data-section safety), proxy resolution (EIP-1167 / 1967 / OZ legacy / getter),
-metadata decoder (ABI string / uint / address, revert tolerance, ERC-165 probe),
-risk scoring (proxy, privileged, value-moving, unresolved, owner, opcodes),
-chain-id guard, and BigInt unit formatting.
+metadata decoder (ABI string / uint / address, transient-vs-revert tracking,
+ERC-165 probe), RPC retry classification (transient vs permanent, backoff,
+exhaustion), risk scoring (proxy, privileged, value-moving, unresolved, owner,
+incomplete-metadata, opcodes), chain-id guard, and BigInt unit formatting.
 
 ```bash
 npm run lint    # node --check on every .js file

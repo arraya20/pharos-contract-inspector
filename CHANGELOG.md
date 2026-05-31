@@ -3,6 +3,30 @@
 All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-05-31
+
+### Added
+- RPC client now retries transient failures (timeout, HTTP 429/5xx, network
+  errors) with exponential backoff + jitter, while failing fast on permanent
+  errors (genuine reverts, HTTP 4xx). Public Pharos RPCs intermittently drop
+  individual calls under load (~1 in 5 during testing); without retry a dropped
+  `owner()` call silently swung a contract's risk score. Configurable via
+  `new Rpc(url, { retries, retryBaseMs, timeoutMs })`.
+- `readMetadata` now returns an `errors` array listing fields whose call failed
+  *transiently* (after retries exhausted). Genuine reverts are excluded — a
+  contract that doesn't implement `owner()` is "no owner", not "owner unknown".
+- Risk summary surfaces a "Metadata read incomplete" flag when admin-relevant
+  metadata could not be read, so the score can't silently under-report admin
+  exposure. The ERC-20 simplicity bonus is withheld when `owner()` is unknown.
+- CLI prints a metadata-incomplete warning line when reads fail transiently.
+- `test-rpc.js`: retry classification tests (transient vs permanent, backoff,
+  exhaustion) with a mocked `fetch`.
+
+### Fixed
+- Non-deterministic risk score on contracts read over a flaky RPC. Scores are
+  now stable across repeated runs (verified: USDC testnet 81/81 across 5 runs;
+  Permit2 mainnet 40 with no false-positive incomplete flag).
+
 ## [1.0.0] - 2026-06-01
 
 Initial release for the Pharos Agent Center Skill Builder Campaign.
